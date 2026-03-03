@@ -1,0 +1,17 @@
+{
+  "name": "telegram-bot-hosting-saas",
+  "version": "1.0.0",
+  "description": "SaaS app for hosting Telegram bots without subscription billing.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "saas",
+    "telegram",
+    "bot-hosting"
+  ],
+  "license": "MIT"
+}

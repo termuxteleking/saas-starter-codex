@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BotForge - Free Telegram Bot Builder</title>
+    <style>
+      :root {
+        --bg: #f3f7ff;
+        --card: #ffffff;
+        --text: #0f172a;
+        --muted: #64748b;
+        --primary: #2563eb;
+        --accent: #0ea5e9;
+        --border: #dbe4f0;
+      }
+      html[data-theme='dark'] {
+        --bg: #0b1220;
+        --card: #131c2f;
+        --text: #e2e8f0;
+        --muted: #9fb0cc;
+        --primary: #60a5fa;
+        --accent: #22d3ee;
+        --border: #24324d;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, sans-serif;
+        background: radial-gradient(circle at 15% 0%, rgba(37,99,235,0.15), transparent 35%), var(--bg);
+        color: var(--text);
+      }
+      .container { max-width: 1100px; margin: 0 auto; padding: 1.2rem; }
+      .topbar {
+        display: flex; justify-content: space-between; align-items: center; gap: 0.8rem;
+        background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 0.8rem 1rem;
+      }
+      .brand h1 { margin: 0; font-size: 1.1rem; }
+      .small { color: var(--muted); font-size: 0.9rem; }
+      .row { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); margin-top: 1rem; }
+      .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1rem; }
+      input, button {
+        width: 100%; margin-top: 0.55rem; padding: 0.7rem 0.8rem;
+        border: 1px solid var(--border); border-radius: 10px; background: transparent; color: var(--text);
+      }
+      button { cursor: pointer; background: linear-gradient(90deg, var(--primary), var(--accent)); color: #fff; border: 0; font-weight: 600; }
+      .ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+      .hidden { display: none; }
+      .builder {
+        display: grid; grid-template-columns: 250px 1fr; gap: 1rem;
+      }
+      .block {
+        border: 1px dashed var(--primary);
+        padding: 0.6rem;
+        border-radius: 10px;
+        margin-top: 0.5rem;
+        cursor: grab;
+        background: rgba(37,99,235,0.06);
+      }
+      .canvas {
+        min-height: 260px;
+        border: 2px dashed var(--border);
+        border-radius: 12px;
+        padding: 0.8rem;
+      }
+      .canvas-item {
+        background: rgba(14,165,233,0.15);
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .bot-item { border-top: 1px solid var(--border); padding: 0.7rem 0; display:flex; justify-content:space-between; gap:0.6rem; }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <header class="topbar">
+        <div class="brand">
+          <h1>🤖 BotForge • Free Telegram Bot Hosting</h1>
+          <div class="small">Build flows with drag-and-drop. Free for all. No subscriptions.</div>
+        </div>
+        <div>
+          <button id="themeSwitch" class="ghost" style="width:auto;padding:.5rem .8rem;">🌙/☀️</button>
+        </div>
+      </header>
+
+      <section id="authSection" class="row">
+        <article class="panel">
+          <h2>Sign up</h2>
+          <input id="regName" placeholder="Full name" />
+          <input id="regEmail" placeholder="Email" />
+          <input id="regPassword" type="password" placeholder="Password" />
+          <button id="registerBtn">Create account</button>
+        </article>
+        <article class="panel">
+          <h2>Login</h2>
+          <input id="loginEmail" placeholder="Email" />
+          <input id="loginPassword" type="password" placeholder="Password" />
+          <button id="loginBtn">Login</button>
+        </article>
+      </section>
+
+      <section id="appSection" class="hidden">
+        <div class="row">
+          <article class="panel">
+            <h2>Deploy Telegram Bot</h2>
+            <div class="small" id="planInfo"></div>
+            <input id="botName" placeholder="Bot name" />
+            <input id="botToken" placeholder="Telegram bot token" />
+            <input id="webhookUrl" placeholder="Webhook URL (optional)" />
+          </article>
+          <article class="panel">
+            <h2>Flow Builder (Drag & Drop)</h2>
+            <div class="builder">
+              <div>
+                <div class="small">Drag blocks</div>
+                <div class="block" draggable="true" data-type="welcome-message">Welcome Message</div>
+                <div class="block" draggable="true" data-type="ask-name">Ask User Name</div>
+                <div class="block" draggable="true" data-type="menu-buttons">Menu Buttons</div>
+                <div class="block" draggable="true" data-type="send-photo">Send Photo</div>
+                <div class="block" draggable="true" data-type="handoff-agent">Handoff to Agent</div>
+              </div>
+              <div>
+                <div class="small">Drop zone</div>
+                <div id="canvas" class="canvas">Drop blocks here…</div>
+              </div>
+            </div>
+            <button id="deployBtn">Deploy Bot with Current Flow</button>
+          </article>
+        </div>
+
+        <article class="panel" style="margin-top:1rem;">
+          <h2>Your deployed bots</h2>
+          <div id="botList"></div>
+          <button id="logoutBtn" class="ghost" style="margin-top:0.8rem;">Logout</button>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const authSection = document.getElementById('authSection');
+      const appSection = document.getElementById('appSection');
+      const botListEl = document.getElementById('botList');
+      const canvas = document.getElementById('canvas');
+      const planInfo = document.getElementById('planInfo');
+      const themeSwitch = document.getElementById('themeSwitch');
+      let flow = [];
+
+      const api = async (url, options = {}) => {
+        const response = await fetch(url, {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+          ...options
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Request failed');
+        return data;
+      };
+
+      function renderFlow() {
+        if (!flow.length) {
+          canvas.innerHTML = 'Drop blocks here…';
+          return;
+        }
+        canvas.innerHTML = '';
+        flow.forEach((step, index) => {
+          const el = document.createElement('div');
+          el.className = 'canvas-item';
+          el.innerHTML = `<span>${index + 1}. ${step}</span><button data-remove="${index}" class="ghost" style="width:auto;">✕</button>`;
+          el.querySelector('button').addEventListener('click', () => {
+            flow.splice(index, 1);
+            renderFlow();
+          });
+          canvas.appendChild(el);
+        });
+      }
+
+      async function loadPlan() {
+        const { plan } = await api('/api/plan');
+        planInfo.textContent = `${plan.name} — $${plan.monthlyPriceUsd}/mo • ${plan.description}`;
+      }
+
+      async function loadBots() {
+        const { bots } = await api('/api/bots');
+        botListEl.innerHTML = bots.length ? '' : '<div class="small">No bots deployed yet.</div>';
+        bots.forEach((bot) => {
+          const item = document.createElement('div');
+          item.className = 'bot-item';
+          item.innerHTML = `<div><strong>${bot.name}</strong><div class="small">${bot.maskedToken} • ${bot.flow.length} blocks</div></div><button data-id="${bot.id}" class="ghost" style="width:auto;">Delete</button>`;
+          item.querySelector('button').addEventListener('click', async () => {
+            await api(`/api/bots/${bot.id}`, { method: 'DELETE' });
+            await loadBots();
+          });
+          botListEl.appendChild(item);
+        });
+      }
+
+      async function refreshSession() {
+        const { user } = await api('/api/auth/me');
+        const isLoggedIn = Boolean(user);
+        authSection.classList.toggle('hidden', isLoggedIn);
+        appSection.classList.toggle('hidden', !isLoggedIn);
+        if (isLoggedIn) {
+          await loadPlan();
+          await loadBots();
+        }
+      }
+
+      document.getElementById('registerBtn').addEventListener('click', async () => {
+        try {
+          await api('/api/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({
+              name: document.getElementById('regName').value,
+              email: document.getElementById('regEmail').value,
+              password: document.getElementById('regPassword').value
+            })
+          });
+          alert('Registration successful. Please login.');
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+      document.getElementById('loginBtn').addEventListener('click', async () => {
+        try {
+          await api('/api/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({
+              email: document.getElementById('loginEmail').value,
+              password: document.getElementById('loginPassword').value
+            })
+          });
+          await refreshSession();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await api('/api/auth/logout', { method: 'POST' });
+        await refreshSession();
+      });
+
+      document.querySelectorAll('.block').forEach((block) => {
+        block.addEventListener('dragstart', (event) => {
+          event.dataTransfer.setData('text/plain', block.dataset.type);
+        });
+      });
+
+      canvas.addEventListener('dragover', (event) => {
+        event.preventDefault();
+      });
+
+      canvas.addEventListener('drop', (event) => {
+        event.preventDefault();
+        const step = event.dataTransfer.getData('text/plain');
+        if (step) {
+          flow.push(step);
+          renderFlow();
+        }
+      });
+
+      document.getElementById('deployBtn').addEventListener('click', async () => {
+        try {
+          await api('/api/bots', {
+            method: 'POST',
+            body: JSON.stringify({
+              name: document.getElementById('botName').value,
+              telegramToken: document.getElementById('botToken').value,
+              webhookUrl: document.getElementById('webhookUrl').value,
+              flow
+            })
+          });
+          flow = [];
+          renderFlow();
+          await loadBots();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+      themeSwitch.addEventListener('click', () => {
+        const html = document.documentElement;
+        html.dataset.theme = html.dataset.theme === 'light' ? 'dark' : 'light';
+      });
+
+      renderFlow();
+      refreshSession();
+    </script>
+  </body>
+</html>
